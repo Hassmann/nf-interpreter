@@ -45,6 +45,7 @@ add_executable(
     ${NANOCLR_PROJECT_NAME}.elf
 
     "${CMAKE_CURRENT_SOURCE_DIR}/target_common.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/target_Power.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/CC3220SF_LAUNCHXL.c"
 
     ${COMMON_PROJECT_SOURCES}
@@ -59,12 +60,12 @@ add_executable(
     ${WireProtocol_SOURCES}
 
     # sources for nanoFramework libraries
-    "${NF_CoreCLR_SOURCES}"
-    "${NF_Debugger_SOURCES}"
-    "${NF_Diagnostics_SOURCES}"
+    ${NF_CoreCLR_SOURCES}
+    ${NF_Debugger_SOURCES}
+    ${NF_Diagnostics_SOURCES}
 
     # sources for nanoFramework APIs
-    "${TARGET_NANO_APIS_SOURCES}"
+    ${TARGET_NANO_APIS_SOURCES}
 )
 
 # add dependency from TI SimpleLink CC32xx SDK and FreeRTOS (this is required to make sure that those repos are downloaded before the build starts)
@@ -73,7 +74,7 @@ add_dependencies(${NANOCLR_PROJECT_NAME}.elf SimpleLinkCC32xxSDK)
 
 # include common directories
 include_directories(
-    "${CMAKE_CURRENT_BINARY_DIR}"
+    ${CMAKE_CURRENT_BINARY_DIR}
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/common"
     "${PROJECT_SOURCE_DIR}/src/CLR/Core"
@@ -89,18 +90,18 @@ include_directories(
 
 # include directories for nanoCLR
 target_include_directories(${NANOCLR_PROJECT_NAME}.elf PUBLIC
-    "${CMAKE_CURRENT_BINARY_DIR}/nanoCLR"
+    ${CMAKE_CURRENT_BINARY_DIR}/nanoCLR
     "${CMAKE_CURRENT_SOURCE_DIR}/nanoCLR"
 
     "${TARGET_TI_SimpleLink_NANOCLR_INCLUDE_DIRS}"
 
     # directories for nanoFramework libraries
-    "${NF_CoreCLR_INCLUDE_DIRS}"
-    "${NF_Debugger_INCLUDE_DIRS}"
-    "${NF_Diagnostics_INCLUDE_DIRS}"
+  ${NF_CoreCLR_INCLUDE_DIRS}
+    ${NF_Debugger_INCLUDE_DIRS}
+    ${NF_Diagnostics_INCLUDE_DIRS}
     
     # includes for nanoFramework APIs
-    "${TARGET_NANO_APIS_INCLUDES}"
+    ${TARGET_NANO_APIS_INCLUDES}
 )
 
 # set compiler options
@@ -110,7 +111,7 @@ nf_set_compiler_options(${NANOCLR_PROJECT_NAME}.elf)
 ###############################################
 # add -DUSE_CC3220_ROM_DRV_API to use ROM API #
 ###############################################
-nf_set_compiler_definitions(${NANOCLR_PROJECT_NAME}.elf -DDeviceFamily_CC3220)
+nf_set_compiler_definitions(${NANOCLR_PROJECT_NAME}.elf -DCC32XX -DDeviceFamily_CC3220 -DPTLS_TLS_INDEX=0 -DBOARD_DISPLAY_USE_UART_ANSI=0 -DBOARD_DISPLAY_USE_LCD=0 -DconfigNUM_THREAD_LOCAL_STORAGE_POINTERS=1 -DSL_PLATFORM_MULTI_THREADED)
 
 # set linker files
 if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)

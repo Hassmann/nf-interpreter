@@ -27,16 +27,27 @@ inline int __signbitd(double x)
 #define isgreater(param0,param1) (param0 > param1)
 #define isless(param0,param1)    (param0 < param1)
 
-#elif __GNUC__ && !defined( isgreater ) // newer versions include this macro already in math.h
+#elif defined(__GNUC__)
 
-#define isgreater(param0,param1) (param0 > param1)
-#define isless(param0,param1)    (param0 < param1)
+#if !defined( isgreater )
+#define isgreater   __builtin_isgreater
+#endif
 
-#elif defined(arm) || defined(__arm)
+#if !defined( isless )
+#define isless      __builtin_isless
+#endif
 
-#define __isnand   __ARM_isnan
-#define __isinfd   __ARM_isinf
-#define __signbitd __ARM_signbit
+#if !defined( __isnand )
+#define __isnand    __builtin_isnan
+#endif
+
+#if !defined( __isinfd )
+#define __isinfd    __builtin_isinf
+#endif
+
+#if !defined( __signbitd )
+#define __signbitd  __builtin_signbit
+#endif
 
 #endif
 
@@ -66,33 +77,49 @@ using namespace System;
 //     Greater than zero 
 //         This instance is greater than value. -or- 
 //         This instance is a number and value is not a number (System.Double.NaN).
-int32_t Double::CompareTo( double d, double val )
+int32_t System::Double::CompareTo( double d, double val )
 {
-
     if (__isnand(d))
     {
-       // Instance is not a number
-       if (__isnand(val)) 
-          return 0; // value is not a number
-       else 
-          return -1; //value is a number
+        // Instance is not a number
+        if (__isnand(val))
+        {
+            // value is not a number
+            return 0;
+        }
+        else 
+        {
+            //value is a number
+            return -1;
+        }
     }
     else
     {
-      // Instance is a number
-      if (__isnand(val)) 
-        // value is not a number
-        return 1; 
+        // Instance is a number
+        if (__isnand(val)) 
+        {
+            // value is not a number
+            return 1; 
+        }
     }
-    if ((__signbitd(d) == __signbitd(val)) && (__isinfd(d) == __isinfd(val)))
-      // either both are Positive or both are Negative Infinity
-      return 0;
+
+    if ( __isinfd(d) && __isinfd(val) )
+    {
+        // both are Infinity
+        return 0;
+    }
+
     if (isgreater(d,val))
-      // this instance is greater than value
-      return 1;
+    {
+        // this instance is greater than value
+        return 1;
+    }
+
     if (isless(d,val))
-      // this instance is less than value
-      return -1;
+    {
+        // this instance is less than value
+        return -1;
+    }
       
     // assume values are equal as all other options have been checked.
     return 0;
@@ -110,7 +137,7 @@ int32_t Double::CompareTo( double d, double val )
 // Returns:
 //     true if d evaluates to System.Double.PositiveInfinity or System.Double.NegativeInfinity;
 //     otherwise, false.
-bool Double::IsInfinity( double d )
+bool System::Double::IsInfinity( double d )
 {
     if(__isnand(d)) 
         return false;
@@ -132,7 +159,7 @@ bool Double::IsInfinity( double d )
 //
 // Returns:
 //     true if d evaluates to System.Double.NaN; otherwise, false.
-bool Double::IsNaN( double d )
+bool System::Double::IsNaN( double d )
 {
     /* Return 1 if __x is a NaN, 0 otherwise */
     /* Used by isnan macro */
@@ -151,7 +178,7 @@ bool Double::IsNaN( double d )
 //
 // Returns:
 //     true if d evaluates to System.Double.NegativeInfinity; otherwise, false.
-bool Double::IsNegativeInfinity( double d )
+bool System::Double::IsNegativeInfinity( double d )
 {
     if(__isnand(d) != 0) 
         return false;
@@ -178,7 +205,7 @@ bool Double::IsNegativeInfinity( double d )
 //
 // Returns:
 //     true if d evaluates to System.Double.PositiveInfinity; otherwise, false.
-bool Double::IsPositiveInfinity( double d )
+bool System::Double::IsPositiveInfinity( double d )
 {
     if(__isnand(d) != 0) 
         return false;

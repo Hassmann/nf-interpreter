@@ -3,11 +3,14 @@
 # See LICENSE file in the project root for full license information.
 #
 
+include(binutils.arm-none-eabi)
+include(binutils.ChibiOS)
 include(STM32_CubePackage)
+include(nf_utils)
 
 ########################################################
 # check availability of hex2dfu tool if specified
-if(NOT "${TOOL_HEX2DFU_PREFIX}" STREQUAL "")
+if(DEFINED TOOL_HEX2DFU_PREFIX)
     if(NOT EXISTS ${TOOL_HEX2DFU_PREFIX}/hex2dfu.exe)
         message(STATUS "")
         message(STATUS "Couldn't find the hex2dfu tool at the specified path: ${TOOL_HEX2DFU_PREFIX}/hex2dfu.exe")
@@ -18,11 +21,6 @@ if(NOT "${TOOL_HEX2DFU_PREFIX}" STREQUAL "")
     else()
         set(HEX2DFU_TOOL_AVAILABLE TRUE CACHE INTERNAL "hex2dfu tool available")
     endif()
-endif()
-
-# sanity check on SSL provider: ChibiOS only supports mbed TLS
-if(NF_SECURITY_OPENSSL)
-    message(FATAL "Can't use OpenSSL for ChibiOS. Currently only mbed TLS is supported.")
 endif()
 
 # check if CHIBIOS_SOURCE was specified or if it's empty (default is empty)
@@ -82,12 +80,8 @@ if(NO_CHIBIOS_SOURCE)
         TIMEOUT 10
         LOG_DOWNLOAD 1
 
-        # install command has to perform TWO extracts
-        # in order to set multiple commands with INSTALL_COMMAND they have to be concatenated by a COMMAND keyword 
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E tar xvf ${PROJECT_BINARY_DIR}/ChibiOS_Source/ext/lwip-2.0.3-patched.7z WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/ChibiOS_Source/ext/
-                COMMAND ${CMAKE_COMMAND} -E tar xvf ${PROJECT_BINARY_DIR}/ChibiOS_Source/ext/fatfs-0.13_patched.7z WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/ChibiOS_Source/ext/
-
         # Disable all other steps
+        INSTALL_COMMAND ""
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
     )
@@ -103,7 +97,9 @@ else()
         message(STATUS "RTOS is: ChibiOS (source from: ${CHIBIOS_SOURCE})")
 
         # check if we already have the sources, no need to copy again
-        if(NOT EXISTS "${CMAKE_BINARY_DIR}/ChibiOS_Source")
+        NF_DIRECTORY_EXISTS_NOT_EMPTY(${CMAKE_BINARY_DIR}/ChibiOS_Source SOURCE_EXISTS)
+
+        if(NOT ${SOURCE_EXISTS})
             file(COPY "${CHIBIOS_SOURCE}/" DESTINATION "${CMAKE_BINARY_DIR}/ChibiOS_Source")
         else()
             message(STATUS "Using local cache of ChibiOS source from ${CHIBIOS_SOURCE}")
@@ -119,13 +115,9 @@ else()
         ChibiOS
         PREFIX ChibiOS
         SOURCE_DIR ${CMAKE_BINARY_DIR}/ChibiOS_Source
-
-        # install command has to perform TWO extracts
-        # in order to set multiple commands with INSTALL_COMMAND they have to be concatenated by a COMMAND keyword 
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E tar xvf ${PROJECT_BINARY_DIR}/ChibiOS_Source/ext/lwip-2.0.3-patched.7z WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/ChibiOS_Source/ext/
-                COMMAND ${CMAKE_COMMAND} -E tar xvf ${PROJECT_BINARY_DIR}/ChibiOS_Source/ext/fatfs-0.13_patched.7z WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/ChibiOS_Source/ext/
         
         # Disable all other steps
+        INSTALL_COMMAND ""
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
     )
@@ -170,7 +162,7 @@ if(CHIBIOS_CONTRIB_REQUIRED)
             ChibiOS-Contrib
             PREFIX ChibiOS-Contrib
             SOURCE_DIR ${CMAKE_BINARY_DIR}/ChibiOS-Contrib_Source
-            GIT_REPOSITORY  https://github.com/ChibiOS/ChibiOS-Contrib
+            GIT_REPOSITORY  https://github.com/nanoframework/ChibiOS-Contrib
             GIT_TAG nanoframework  # target specified branch
             GIT_SHALLOW 1   # download only the tip of the branch, not the complete history
             TIMEOUT 10
@@ -192,7 +184,9 @@ if(CHIBIOS_CONTRIB_REQUIRED)
             message(STATUS "ChibiOS-Contrib source from: ${CHIBIOS_CONTRIB_SOURCE}")
 
             # check if we already have the sources, no need to copy again
-            if(NOT EXISTS "${CMAKE_BINARY_DIR}/ChibiOS-Contrib_Source")
+            NF_DIRECTORY_EXISTS_NOT_EMPTY(${CMAKE_BINARY_DIR}/ChibiOS-Contrib_Source SOURCE_EXISTS)
+
+            if(NOT ${SOURCE_EXISTS})
                 file(COPY "${CHIBIOS_CONTRIB_SOURCE}/" DESTINATION "${CMAKE_BINARY_DIR}/ChibiOS-Contrib_Source")
             else()
                 message(STATUS "Using local cache of ChibiOS-Contrib source from ${CHIBIOS_CONTRIB_SOURCE}")
@@ -247,7 +241,7 @@ if(NF_SECURITY_MBEDTLS)
         endif()
 
         # set tag for currently supported version
-        set(MBEDTLS_GIT_TAG "mbedtls-2.14")
+        set(MBEDTLS_GIT_TAG "mbedtls-2.16.3")
 
         # need to setup a separate CMake project to download the code from the GitHub repository
         # otherwise it won't be available before the actual build step
@@ -283,12 +277,15 @@ if(NF_SECURITY_MBEDTLS)
 
     else()
         # mbedTLS source was specified
+        # message(FATAL_ERROR "${CMAKE_BINARY_DIR}/mbedTLS_Source") 
 
         # sanity check is source path exists
         if(EXISTS "${MBEDTLS_SOURCE}/")
 
             # check if we already have the sources, no need to copy again
-            if(NOT EXISTS "${CMAKE_BINARY_DIR}/mbedTLS_Source")
+            NF_DIRECTORY_EXISTS_NOT_EMPTY(${CMAKE_BINARY_DIR}/mbedTLS_Source SOURCE_EXISTS)
+
+            if(NOT ${SOURCE_EXISTS})
                 message(STATUS "mbedTLS source from: ${MBEDTLS_SOURCE}")
                 file(COPY "${MBEDTLS_SOURCE}/" DESTINATION "${CMAKE_BINARY_DIR}/mbedTLS_Source")
             else()
@@ -314,17 +311,11 @@ if(NF_SECURITY_MBEDTLS)
 
     endif()
 
-    # get source dir for mbedTLS CMake project
-    ExternalProject_Get_Property(mbedTLS SOURCE_DIR)
-
     set(mbedTLS_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/3rdparty/humblelogging/include")
     set(mbedTLS_LIBRARIES "${CMAKE_SHARED_LIBRARY_PREFIX}mbedTLS${CMAKE_SHARED_LIBRARY_SUFFIX}")
     include_directories(${mbedTLS_INCLUDE_DIRS})
 
 endif()
-
-# Define base path for the class libraries
-set(BASE_PATH_FOR_CLASS_LIBRARIES_MODULES "${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nanoCLR")
 
 # set target base location
 # this has to be set before the class library modules are pulled in
@@ -408,11 +399,6 @@ endif()
 # if support for SPIFFS is enabled add it to the build
 if(NF_FEATURE_USE_SPIFFS)
 
-    # SPIFFS needs STM Cube package option
-    if(NOT STM32_CUBE_PACKAGE_REQUIRED)
-        message(FATAL_ERROR "error: SPIFFS requires STM Cube package option, make sure you have STM32_CUBE_PACKAGE_REQUIRED build option set to ON.")
-    endif()
-
     # check if SPIFFS_SOURCE was specified or if it's empty (default is empty)
     set(NO_SPIFFS_SOURCE TRUE)
 
@@ -435,7 +421,7 @@ if(NF_FEATURE_USE_SPIFFS)
 
         # need to setup a separate CMake project to download the code from the GitHub repository
         # otherwise it won't be available before the actual build step
-        configure_file("CMake/SPIFFS.CMakeLists.cmake.in"
+        configure_file("${PROJECT_SOURCE_DIR}/CMake/SPIFFS.CMakeLists.cmake.in"
                     "${CMAKE_BINARY_DIR}/SPIFFS_Download/CMakeLists.txt")
 
         # setup CMake project for SPIFFS download
@@ -454,6 +440,7 @@ if(NF_FEATURE_USE_SPIFFS)
             PREFIX SPIFFS
             SOURCE_DIR ${CMAKE_BINARY_DIR}/SPIFFS_Source
             GIT_REPOSITORY  https://github.com/nanoframework/spiffs
+            GIT_TAG "nf-build"  # target nanoFramework modified branch
             GIT_SHALLOW 1   # download only the tip of the branch, not the complete history
             TIMEOUT 10
             LOG_DOWNLOAD 1

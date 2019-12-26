@@ -13,9 +13,13 @@ option(API_nanoFramework.Devices.Can            "option for nanoFramework.Device
 option(API_nanoFramework.Devices.OneWire        "option for nanoFramework.Devices.OneWire")
 option(API_nanoFramework.Networking.Sntp        "option for nanoFramework.Networking.Sntp")
 option(API_nanoFramework.Runtime.Events         "option for nanoFramework.Runtime.Events API")
+option(API_nanoFramework.ResourceManager        "option for nanoFramework.ResourceManager")
+option(API_nanoFramework.System.Collections     "option for nanoFramework.System.Collections")
+option(API_nanoFramework.System.Text            "option for nanoFramework.System.Text")
 option(API_System.Math                          "option for System.Math")
 option(API_System.Net                           "option for System.Net")
 option(API_Windows.Devices.Adc                  "option for Windows.Devices.Adc API")
+option(API_System.Devices.Dac                   "option for System.Devices.Dac API")
 option(API_Windows.Devices.Gpio                 "option for Windows.Devices.Gpio API")
 option(API_Windows.Devices.I2c                  "option for Windows.Devices.I2c API")
 option(API_Windows.Devices.Pwm                  "option for Windows.Devices.Pwm API")
@@ -31,6 +35,9 @@ option(API_Hardware.Esp32                       "option for Hardware.Esp32")
 
 # Stm32 only
 option(API_Hardware.Stm32                       "option for Hardware.Stm32")
+
+# TI CC13xxCC26xx
+option(API_nanoFramework.TI.EasyLink            "option for nanoFramework.TI.EasyLink API")
 
 
 #################################################################
@@ -103,6 +110,30 @@ macro(ParseNativeAssemblies)
         PerformSettingsForApiEntry("nanoFramework.Networking.Sntp")
     endif()
 
+    # nanoFramework.ResourceManager
+    if(API_nanoFramework.ResourceManager)
+        ##### API name here (doted name)
+        PerformSettingsForApiEntry("nanoFramework.ResourceManager")
+    endif()
+
+    # nanoFramework.System.Collections
+    if(API_nanoFramework.System.Collections)
+        ##### API name here (doted name)
+        PerformSettingsForApiEntry("nanoFramework.System.Collections")
+    endif()
+
+    # nanoFramework.System.Text
+    if(API_nanoFramework.System.Text)
+        ##### API name here (doted name)
+        PerformSettingsForApiEntry("nanoFramework.System.Text")
+    endif()
+
+    # nanoFramework.TI.EasyLink
+    if(API_nanoFramework.TI.EasyLink)
+        ##### API name here (doted name)
+        PerformSettingsForApiEntry("nanoFramework.TI.EasyLink")
+    endif()
+
     # nanoFramework.Runtime.Events
     if(API_nanoFramework.Runtime.Events)
         ##### API name here (doted name)
@@ -133,6 +164,12 @@ macro(ParseNativeAssemblies)
     if(API_Windows.Devices.Adc)
         ##### API name here (doted name)
         PerformSettingsForApiEntry("Windows.Devices.Adc")
+    endif()
+
+    # System.Devices.Dac
+    if(API_System.Devices.Dac)
+        ##### API name here (doted name)
+        PerformSettingsForApiEntry("System.Devices.Dac")
     endif()
 
     # Windows.Devices.Gpio
@@ -192,6 +229,12 @@ macro(ParseNativeAssemblies)
     # parse the list to have new lines, ',' and identation
     string(REPLACE ";" "\n    " CLR_RT_NativeAssemblyDataTableEntries "${CLR_RT_NativeAssemblyDataTableEntriesList}")
 
+
+    # configure code file with Interop Assemblies table and...
+    configure_file("${PROJECT_SOURCE_DIR}/InteropAssemblies/CLR_RT_InteropAssembliesTable.cpp.in"
+                    "${CMAKE_CURRENT_BINARY_DIR}/CLR_RT_InteropAssembliesTable.cpp" @ONLY)
+    # ... now add Interop Assemblies table to ChibiOS nanoCLR sources list
+    list(APPEND TARGET_NANO_APIS_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/CLR_RT_InteropAssembliesTable.cpp")
 
     # make the vars global
     set(TARGET_NANO_APIS_INCLUDES ${TARGET_NANO_APIS_INCLUDES} CACHE INTERNAL "make global")

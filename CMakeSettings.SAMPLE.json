@@ -14,11 +14,6 @@
       "intelliSenseMode": "linux-gcc-arm",
       "variables": [
         {
-          "name": "VISUAL_STUDIO",
-          "value": "TRUE",
-          "type": "STRING"
-        },
-        {
           "name": "EXECUTABLE_OUTPUT_PATH",
           "value": "${workspaceRoot}/Build/${name}",
           "type": "PATH"
@@ -35,12 +30,12 @@
         },
         {
           "name": "ESP32_IDF_PATH",
-          "value": "C:/ESP32_TOOLS/esp-idf-v3.1",
+          "value": "C:/ESP32_TOOLS/esp-idf-v3.3",
           "type": "PATH"
         },
         {
           "name": "ESP32_LIBS_PATH",
-          "value": "C:/ESP32_TOOLS/libs-v3.1",
+          "value": "C:/ESP32_TOOLS/libs-v3.3",
           "type": "PATH"
         },
         {
@@ -71,6 +66,11 @@
         {
           "name": "USE_RNG",
           "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "TARGET_LIGHT_MATH",
+          "value": "FALSE",
           "type": "BOOL"
         },
         {
@@ -169,11 +169,6 @@
           "type": "BOOL"
         },
         {
-          "name": "NF_SECURITY_OPENSSL",
-          "value": "OFF",
-          "type": "BOOL"
-        },
-        {
           "name": "NF_SECURITY_MBEDTLS",
           "value": "OFF",
           "type": "BOOL"
@@ -189,6 +184,11 @@
           "type": "BOOL"
         },
         {
+          "name": "API_nanoFramework.ResourceManager",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
           "name": "API_System.Net",
           "value": "True",
           "type": "BOOL"
@@ -196,6 +196,11 @@
         {
           "name": "API_Windows.Devices.Adc",
           "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "API_System.Devices.Dac",
+          "value": "False",
           "type": "BOOL"
         },
         {
@@ -269,11 +274,6 @@
       "intelliSenseMode": "linux-gcc-arm",
       "variables": [
         {
-          "name": "VISUAL_STUDIO",
-          "value": "TRUE",
-          "type": "STRING"
-        },
-        {
           "name": "EXECUTABLE_OUTPUT_PATH",
           "value": "${workspaceRoot}/Build/${name}",
           "type": "STRING"
@@ -311,6 +311,11 @@
         {
           "name": "USE_RNG",
           "value": "ON",
+          "type": "BOOL"
+        },
+        {
+          "name": "TARGET_LIGHT_MATH",
+          "value": "FALSE",
           "type": "BOOL"
         },
         {
@@ -424,11 +429,6 @@
           "type": "BOOL"
         },
         {
-          "name": "NF_SECURITY_OPENSSL",
-          "value": "OFF",
-          "type": "BOOL"
-        },
-        {
           "name": "NF_SECURITY_MBEDTLS",
           "value": "OFF",
           "type": "BOOL"
@@ -456,6 +456,11 @@
         {
           "name": "API_Windows.Devices.Adc",
           "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "API_System.Devices.Dac",
+          "value": "False",
           "type": "BOOL"
         },
         {

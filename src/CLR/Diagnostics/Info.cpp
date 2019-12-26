@@ -18,6 +18,26 @@ void CLR_Debug::RedirectToString( std::string* str )
     s_redirectedString = str;
 }
 
+static std::string s_messageString = "";
+
+void CLR_Debug::SaveMessage(std::string str)
+{
+	NATIVE_PROFILE_CLR_DIAGNOSTICS();
+
+	// clear LR & CR
+	int pos;
+	if ((pos = str.find('\n')) != std::string::npos)
+	{
+		str.erase(pos);
+	}
+	if ((pos = str.find('\r')) != std::string::npos)
+	{
+		str.erase(pos);
+	}
+
+	s_messageString = str;
+}
+
 HRESULT NANOCLR_DEBUG_PROCESS_EXCEPTION( HRESULT hr, const char* szFunc, const char* szFile, int line )
 {
     NATIVE_PROFILE_CLR_DIAGNOSTICS();
@@ -245,6 +265,10 @@ int CLR_Debug::PrintfV( const char *format, va_list arg )
 
 #if defined(_WIN32)
 	OutputDebugStringA(buffer);
+
+	std::string outputString(buffer, iBuffer);
+	SaveMessage(outputString);
+
 #endif
 
 #if !defined(_WIN32)
@@ -727,18 +751,18 @@ void CLR_RT_DUMP::EXCEPTION( CLR_RT_StackFrame& stack, CLR_RT_HeapBlock& ref )
 
     CLR_RT_HeapBlock* obj = Library_corlib_native_System_Exception::GetTarget( ref ); if(!obj) return;
 
-    CLR_Debug::Printf( "    #### Exception " ); CLR_RT_DUMP::TYPE( obj->ObjectCls() ); CLR_Debug::Printf( " - %s (%d) ####\r\n", CLR_RT_DUMP::GETERRORMESSAGE( Library_corlib_native_System_Exception::GetHResult( obj ) ), stack.m_owningThread->m_pid );
+    CLR_Debug::Printf( "    ++++ Exception " ); CLR_RT_DUMP::TYPE( obj->ObjectCls() ); CLR_Debug::Printf( " - %s (%d) ++++\r\n", CLR_RT_DUMP::GETERRORMESSAGE( Library_corlib_native_System_Exception::GetHResult( obj ) ), stack.m_owningThread->m_pid );
 
     msg = Library_corlib_native_System_Exception::GetMessage( obj );
     
-    CLR_Debug::Printf( "    #### Message: %s\r\n", msg == NULL ? "" : msg );
+    CLR_Debug::Printf( "    ++++ Message: %s\r\n", msg == NULL ? "" : msg );
 
     CLR_UINT32                                          depth;
     Library_corlib_native_System_Exception::StackTrace* stackTrace = Library_corlib_native_System_Exception::GetStackTrace( obj, depth ); if(!stackTrace) return;
 
     while(depth-- > 0)
     {
-        CLR_Debug::Printf( "    #### " ); CLR_RT_DUMP::METHOD( stackTrace->m_md ); CLR_Debug::Printf( " [IP: %04x] ####\r\n", stackTrace->m_IP );
+        CLR_Debug::Printf( "    ++++ " ); CLR_RT_DUMP::METHOD( stackTrace->m_md ); CLR_Debug::Printf( " [IP: %04x] ++++\r\n", stackTrace->m_IP );
 
         stackTrace++;
     }
@@ -821,6 +845,13 @@ const char* CLR_RT_DUMP::GETERRORMESSAGE( HRESULT hrError )
 
     return s_tmp;
 }
+
+#if defined(_WIN32)
+const char* CLR_RT_DUMP::GETERRORDETAIL()
+{
+	return s_messageString.c_str();
+}
+#endif
 
 #endif // defined(NANOCLR_TRACE_EXCEPTIONS)
 

@@ -3,7 +3,6 @@
 # See LICENSE file in the project root for full license information.
 #
 
-cmake_minimum_required(VERSION 3.0)
 ENABLE_LANGUAGE(ASM)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/nanoCLR/target_board.h.in"
@@ -14,9 +13,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/target_common.h.in"
 configure_file("${CMAKE_SOURCE_DIR}/CMake/ESP32_target_os.h.in"
                "${CMAKE_BINARY_DIR}/targets/FreeRTOS_ESP32/ESP32_WROOM_32/target_os.h" @ONLY)
 
-
 set(NANOCLR_PROJECT_NAME "nanoCLR")
-
 
 find_package(WireProtocol REQUIRED)
 
@@ -46,6 +43,11 @@ else()
     set(HAL_USE_RTC_OPTION FALSE CACHE INTERNAL "NF feature RTC")
 endif()
 
+# security provider is mbedTLS
+if(USE_SECURITY_MBEDTLS_OPTION)
+    find_package(mbedTLS REQUIRED)
+endif()
+
 #######################################
 
 add_subdirectory("common")
@@ -54,12 +56,24 @@ add_subdirectory("IDF")
 add_subdirectory("Network")
 add_subdirectory("nanoCLR")
 
+# mbed TLS requires a config file
+if(USE_SECURITY_MBEDTLS_OPTION)
+    # this seems to be only option to properly set a compiler define through the command line that needs to be a string literal
+	file(TO_CMAKE_PATH "${PROJECT_SOURCE_DIR}/src/PAL/COM/sockets/ssl/mbedTLS/nf_mbedtls_config.h" MBED_CONFILE)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMBEDTLS_CONFIG_FILE=\"<${MBED_CONFILE}>\"")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMBEDTLS_CONFIG_FILE=\"<${MBED_CONFILE}>\"")
+endif()
+
 # Build the networking components as a separate library
 # This is done this way to stop "Createprocess: file no found" errors in linker when object input file is greater than 32k
 if(USE_NETWORKING_OPTION)
-add_library(NetworkLib STATIC "${NF_Networking_SOURCES}" "${TARGET_ESP32_NETWORK_SOURCES}"  "${TARGET_LWIP_SOURCES}" )
+    add_library(NetworkLib STATIC ${NF_Networking_SOURCES} ${TARGET_ESP32_NETWORK_SOURCES} ${TARGET_LWIP_SOURCES} ${mbedTLS_SOURCES} )
 endif()
 
+# add dependency for security provider mbedTLS
+if(USE_SECURITY_MBEDTLS_OPTION)
+    add_dependencies(NetworkLib mbedTLS)
+endif()
 
 #######################
 # nanoCLR executable
@@ -81,65 +95,83 @@ add_executable(
     ${WireProtocol_SOURCES}
 
     # sources for nanoFramework libraries
-    "${NF_CoreCLR_SOURCES}"
-    "${NF_Debugger_SOURCES}"
-    "${NF_Diagnostics_SOURCES}"
-    
-	# sources for nanoFramework Network sockets & LWIP
-#    "${NF_Networking_SOURCES}"
-#    "${TARGET_ESP32_NETWORK_SOURCES}"  
-#    "${TARGET_LWIP_SOURCES}"
-    
+    ${NF_CoreCLR_SOURCES}
+    ${NF_Debugger_SOURCES}
+    ${NF_Diagnostics_SOURCES}
+  
     # # sources for nanoFramework APIs
-    "${TARGET_NANO_APIS_SOURCES}"
+    ${TARGET_NANO_APIS_SOURCES}
 )
-
-
 
 # Add link flags
 set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--start-group ")
-set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS "  ${ESP32_IDF_PATH}/components/esp32/libhal.a ")
-set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS "  -L ${ESP32_IDF_PATH}/components/esp32/lib -lcore -lrtc -lnet80211 -lmesh -lpp -lwpa -lsmartconfig -lcoexist -lwps -lwpa2 -lphy ")
-set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -L  ${CMAKE_CURRENT_SOURCE_DIR} -T esp32_out.ld ")
-set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -L ${ESP32_IDF_PATH}/components/esp32/ld -u ld_include_panic_highint_hdl -T esp32.common.ld -T esp32.rom.ld -T esp32.peripherals.ld -T esp32.rom.spiram_incompatible_fns.ld ")
-set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS "  ${ESP32_IDF_PATH}/components/newlib/lib/libc.a ")
-set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS "  ${ESP32_IDF_PATH}/components/newlib/lib/libm.a ")
+
+if(USE_SECURITY_MBEDTLS_OPTION)
+    add_dependencies(${NANOCLR_PROJECT_NAME}.elf NetworkLib)
+endif()
 
 #message( "project libs:${PROJECT_LINK_LIBS} " )
 set(LIBPATHSAVE "")
 foreach( IDF_libraries ${PROJECT_LINK_LIBS} )
+
     get_filename_component( LIBNAME ${IDF_libraries} NAME_WE )
     get_filename_component( LIBPATH ${IDF_libraries} DIRECTORY )
   
     string( SUBSTRING ${LIBNAME} 3 -1 LIBSHORT )
+
     if( NOT "${LIBPATHSAVE}" STREQUAL ${LIBPATH} )
         set(LIBPATHSAVE ${LIBPATH})
         set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf APPEND_STRING PROPERTY LINK_FLAGS " -L${LIBPATH} " )
-    endif() 
+    endif()
+
+	# Add psram workarounds for newlib
+    if( "${LIBSHORT}" STREQUAL "newlib" )
+	    set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " ${ESP32_IDF_PATH}/components/newlib/lib/libc-psram-workaround.a " )
+	    set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " ${ESP32_IDF_PATH}/components/newlib/lib/libm-psram-workaround.a " )
+	endif()
+
     set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -l${LIBSHORT} " )
     
+    if( "${LIBSHORT}" STREQUAL "app_update" )
+        set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -u esp_app_desc " )
+    endif()
+
+	if( "${LIBSHORT}" STREQUAL "bt" )
+        set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -L${ESP32_IDF_PATH}/components/bt/lib -lbtdm_app " )
+    endif()
+
     # Add options into LINK_FLAGS in same position as IDF link
     if( "${LIBSHORT}" STREQUAL "cxx" )
         # Cxx Library needs an undefine
-        set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -u __cxa_guard_dummy " )
-        endif()   
+        set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -u __cxa_guard_dummy -u __cxx_fatal_exception  " )
+    endif()
+
+	if( "${LIBSHORT}" STREQUAL "esp32" )
+        set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " ${ESP32_IDF_PATH}/components/esp32/libhal.a  " )
+		set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -L ${ESP32_IDF_PATH}/components/esp32/lib -lcore -lrtc -lnet80211  -lpp -lwpa -lsmartconfig -lcoexist -lwps -lwpa2 -lespnow -lphy -lmesh")
+	
+		set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -L  ${CMAKE_CURRENT_SOURCE_DIR} -T esp32_out.ld ")
+		set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -L ${ESP32_IDF_PATH}/components/esp32/ld -u ld_include_panic_highint_hdl -T esp32.project.ld -T esp32.rom.ld -T esp32.peripherals.ld -T esp32.rom.libgcc.ld   ")
+	endif()
+
+
     if( "${LIBSHORT}" STREQUAL "freertos" )
         # Cxx Library needs an undefine
         set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--undefined=uxTopUsedPriority " )
-        endif()   
+    endif()
+
 endforeach( IDF_libraries )
 
+
 if(USE_NETWORKING_OPTION)
-set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -L${CMAKE_CURRENT_BINARY_DIR} -lNetworkLib " )
+    set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -L${CMAKE_CURRENT_BINARY_DIR} -lNetworkLib " )
 endif()
 
-set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -lgcc -lstdc++ -Wl,--end-group -Wl,-EL  ")
-
-#message( "wireprotol :${WireProtocol_INCLUDE_DIRS}")
+set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -lgcc -lstdc++ -lgcov -Wl,--end-group -Wl,-EL  ")
 
 # include common directories
 include_directories(
-    "${CMAKE_CURRENT_BINARY_DIR}"
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/common
@@ -159,24 +191,25 @@ include_directories(
 
 # include directories for nanoCLR
 target_include_directories(${NANOCLR_PROJECT_NAME}.elf PUBLIC
-    "${CMAKE_CURRENT_BINARY_DIR}/nanoCLR"
-     ${CMAKE_CURRENT_SOURCE_DIR}/nanoCLR
+    ${CMAKE_CURRENT_BINARY_DIR}/nanoCLR
+    ${CMAKE_CURRENT_SOURCE_DIR}/nanoCLR
 
     # directories for nanoFramework libraries
-    "${NF_CoreCLR_INCLUDE_DIRS}"
-    "${NF_Debugger_INCLUDE_DIRS}"
-	"${NF_Networking_INCLUDE_DIRS}"
+    ${NF_CoreCLR_INCLUDE_DIRS}
+    ${NF_Debugger_INCLUDE_DIRS}
+	${NF_Networking_INCLUDE_DIRS}
 
     # includes for nanoFramework APIs
-    "${TARGET_NANO_APIS_INCLUDES}"
+    ${TARGET_NANO_APIS_INCLUDES}
 )
 
 # Set Includes & compile definition for Network library
 if(USE_NETWORKING_OPTION)
     target_include_directories(NetworkLib PUBLIC
-        "${CMAKE_CURRENT_BINARY_DIR}/nanoCLR"
-        "${NF_CoreCLR_INCLUDE_DIRS}"
-        "${NF_Networking_INCLUDE_DIRS}"
+        ${CMAKE_CURRENT_BINARY_DIR}/nanoCLR
+        ${NF_CoreCLR_INCLUDE_DIRS}
+        ${NF_Networking_INCLUDE_DIRS}
+        ${mbedTLS_INCLUDE_DIRS}
     )
 
     target_compile_definitions(NetworkLib PUBLIC "-DPLATFORM_ESP32 " )
@@ -227,6 +260,13 @@ set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_F
 
 # add linker flags to generate map file
 set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-Map=${PROJECT_BINARY_DIR}/${NANOCLR_PROJECT_NAME}.map")
+# Verbose linking, uncomment to enable
+#set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf    APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--verbose ")
+
+# add dependency for networking
+if(USE_SECURITY_MBEDTLS_OPTION)
+    add_dependencies(${NANOCLR_PROJECT_NAME}.elf NetworkLib)
+endif()
 
 # Create bin file from elf
 set(GEN_ESP32_BIN_PATH ${EXECUTABLE_OUTPUT_PATH} )
@@ -241,15 +281,16 @@ add_custom_command( TARGET ${NANOCLR_PROJECT_NAME}.elf POST_BUILD
     
 # # Create partition table
 add_custom_command( TARGET ${NANOCLR_PROJECT_NAME}.elf POST_BUILD
-	COMMAND ${GEN_ESP32PART_PY_FILE}  --verify    ${PROJECT_SOURCE_DIR}/targets/FreeRTOS_ESP32/ESP32_WROOM_32/IDF/partitions_nanoclr_4mb.csv ${GEN_ESP32_BIN_PATH}/partitions_4mb.bin
-	COMMAND ${GEN_ESP32PART_PY_FILE}  --verify   ${PROJECT_SOURCE_DIR}/targets/FreeRTOS_ESP32/ESP32_WROOM_32/IDF/partitions_nanoclr_2mb.csv ${GEN_ESP32_BIN_PATH}/partitions_2mb.bin
-	COMMENT "Generate Esp32 Partition tables for 2MB and 4MB flash" )
+	COMMAND ${GEN_ESP32PART_PY_FILE}  --verify  ${PROJECT_SOURCE_DIR}/targets/FreeRTOS_ESP32/ESP32_WROOM_32/IDF/partitions_nanoclr_16mb.csv ${GEN_ESP32_BIN_PATH}/partitions_16mb.bin
+	COMMAND ${GEN_ESP32PART_PY_FILE}  --verify  ${PROJECT_SOURCE_DIR}/targets/FreeRTOS_ESP32/ESP32_WROOM_32/IDF/partitions_nanoclr_8mb.csv  ${GEN_ESP32_BIN_PATH}/partitions_8mb.bin
+	COMMAND ${GEN_ESP32PART_PY_FILE}  --verify  ${PROJECT_SOURCE_DIR}/targets/FreeRTOS_ESP32/ESP32_WROOM_32/IDF/partitions_nanoclr_4mb.csv  ${GEN_ESP32_BIN_PATH}/partitions_4mb.bin
+	COMMAND ${GEN_ESP32PART_PY_FILE}  --verify  ${PROJECT_SOURCE_DIR}/targets/FreeRTOS_ESP32/ESP32_WROOM_32/IDF/partitions_nanoclr_2mb.csv  ${GEN_ESP32_BIN_PATH}/partitions_2mb.bin
+	COMMENT "Generate Esp32 Partition tables for 2MB, 4MB, 8MB and 16MB flash" )
 
 # list partition table
 add_custom_command( TARGET ${NANOCLR_PROJECT_NAME}.elf POST_BUILD
 	COMMAND ${GEN_ESP32PART_PY_FILE}  ${GEN_ESP32_BIN_PATH}/partitions_4mb.bin
 	COMMENT "List flash 4Mb Esp32 Partition tables" )
-
 
 #message("CMAKE_CXX_FLAGS:${CMAKE_CXX_FLAGS}" )
 #message("CMAKE_EXE_LINKER_FLAGS:${CMAKE_EXE_LINKER_FLAGS}" )
@@ -258,4 +299,3 @@ add_custom_command( TARGET ${NANOCLR_PROJECT_NAME}.elf POST_BUILD
 #message("CMAKE_CXX_LINK_EXECUTABLE:${CMAKE_CXX_LINK_EXECUTABLE}" )
 #message("CMAKE_C_LINK_EXECUTABLE:${CMAKE_C_LINK_EXECUTABLE}" )
 #message("FLAGS:${FLAGS}" )
-

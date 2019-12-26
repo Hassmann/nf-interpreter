@@ -14,6 +14,11 @@
 void Storage_Initialize();
 void Storage_Uninitialize();
 
+
+extern "C" void FixUpHalSystemConfig();
+extern "C" void FixUpBlockRegionInfo();
+
+
 //
 //  Reboot handlers clean up on reboot
 //
@@ -54,6 +59,10 @@ void nanoHAL_Initialize()
     HAL_CONTINUATION::InitializeList();
     HAL_COMPLETION  ::InitializeList();
 
+	// Fixup System & Block storage parameters based on Flash chip and parttion layout
+	FixUpHalSystemConfig();
+	FixUpBlockRegionInfo();
+
     BlockStorageList_Initialize();
 
     // initialize block storage devices
@@ -73,6 +82,8 @@ void nanoHAL_Initialize()
     Events_Initialize();
 
 	Storage_Initialize();
+
+	CPU_GPIO_Initialize();
 
     // no PAL events required until now
     //PalEvent_Initialize();
@@ -109,6 +120,8 @@ void nanoHAL_Uninitialize()
   #endif
  
     BlockStorageList_UnInitializeDevices();
+
+	CPU_GPIO_Uninitialize();
 
     //PalEvent_Uninitialize();
 

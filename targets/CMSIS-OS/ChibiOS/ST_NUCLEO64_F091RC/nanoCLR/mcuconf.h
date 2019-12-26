@@ -33,11 +33,11 @@
 #define STM32_HSI14_ENABLED                 TRUE
 #define STM32_HSI48_ENABLED                 FALSE
 #define STM32_LSI_ENABLED                   TRUE
-#define STM32_HSE_ENABLED                   FALSE
+#define STM32_HSE_ENABLED                   TRUE
 #define STM32_LSE_ENABLED                   FALSE
 #define STM32_SW                            STM32_SW_PLL
-#define STM32_PLLSRC                        STM32_PLLSRC_HSI_DIV2
-#define STM32_PREDIV_VALUE                  1
+#define STM32_PLLSRC                        STM32_PLLSRC_HSE
+#define STM32_PREDIV_VALUE                  2
 #define STM32_PLLMUL_VALUE                  12
 #define STM32_HPRE                          STM32_HPRE_DIV1
 #define STM32_PPRE                          STM32_PPRE_DIV1
@@ -77,7 +77,7 @@
  * DAC driver system settings.
  */
 #define STM32_DAC_DUAL_MODE                 FALSE
-#define STM32_DAC_USE_DAC1_CH1              FALSE
+#define STM32_DAC_USE_DAC1_CH1              TRUE
 #define STM32_DAC_USE_DAC1_CH2              FALSE
 #define STM32_DAC_DAC1_CH1_IRQ_PRIORITY     2
 #define STM32_DAC_DAC1_CH2_IRQ_PRIORITY     2
