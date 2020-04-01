@@ -80,7 +80,11 @@ static void GpioEventCallback(void *arg)
 	gpio_input_state * pGpio = (gpio_input_state *)arg;
 
 	// Ignore any pin changes during debounce
-	if (pGpio->waitingDebounce) return;
+	if (pGpio->waitingDebounce)
+	{
+		chSysUnlockFromISR();
+		return;
+	}
 
 	// check if there is a debounce time set
 	if (pGpio->debounceMs > 0)
@@ -136,7 +140,7 @@ gpio_input_state * AllocateGpioInputState(GPIO_PIN pinNumber)
 
 void UnlinkInputState(gpio_input_state * pState)
 {
-	chVTResetI(&pState->debounceTimer);
+	chVTReset(&pState->debounceTimer);
 
 	// disable the EXT interrupt channel
 	// it's OK to do always this, no matter if it's enabled or not
@@ -168,16 +172,11 @@ bool   CPU_GPIO_Initialize()
 
 bool   CPU_GPIO_Uninitialize()
 {
-	gpio_input_state * pGpio;
-
-	pGpio = gpioInputList.FirstNode();
-
-	// Clean up input state list
-	while (pGpio->Next() != NULL)
+	NANOCLR_FOREACH_NODE(gpio_input_state, pGpio, gpioInputList)
 	{
 		UnlinkInputState(pGpio);
-		pGpio = pGpio->Next();
 	}
+	NANOCLR_FOREACH_NODE_END();
 
 	return true;
 }
@@ -189,17 +188,20 @@ bool   CPU_GPIO_ReservePin(GPIO_PIN pinNumber, bool fReserve)
 	if (!IsValidGpioPin(pinNumber)) return false;
 
 	int port = pinNumber >> 4, bit = 1 << (pinNumber & 0x0F);
+	bool ret = true;
 	GLOBAL_LOCK();
 
 	if (fReserve)
 	{
 		if (pinReserved[port] & bit)
 		{
-			GLOBAL_UNLOCK();
-			return false; // already reserved
+			ret = false; // already reserved
 		}
+		else
+		{
 
 		pinReserved[port] |= bit;
+		}
 	}
 	else
 	{
@@ -207,7 +209,7 @@ bool   CPU_GPIO_ReservePin(GPIO_PIN pinNumber, bool fReserve)
 	}
 
 	GLOBAL_UNLOCK();
-	return true;
+	return ret;
 }
 
 // Return if Pin is reserved
@@ -319,9 +321,9 @@ bool  CPU_GPIO_EnableOutputPin(GPIO_PIN pinNumber, GpioPinValue InitialState, Gp
 
 void CPU_GPIO_DisablePin(GPIO_PIN pinNumber, GpioPinDriveMode driveMode, uint32_t alternateFunction)
 {
-	GLOBAL_LOCK();
-
 	DeleteInputState(pinNumber);
+
+	GLOBAL_LOCK();
 
 	CPU_GPIO_SetDriveMode(pinNumber, driveMode);
 
