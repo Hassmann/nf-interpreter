@@ -10,7 +10,7 @@
 ########################################################################################
 
 # native code directory
-set(BASE_PATH_FOR_THIS_MODULE ${PROJECT_SOURCE_DIR}/InteropAssemblies/nanoFramework.Hardware.Esp32.Bluetooth)
+set(BASE_PATH_FOR_THIS_MODULE "${BASE_PATH_FOR_CLASS_LIBRARIES_MODULES}/nanoFramework.Hardware.Esp32.Bluetooth")
 
 
 # set include directories
@@ -26,18 +26,7 @@ set(nanoFramework.Hardware.Esp32.Bluetooth_SRCS
 
     nanoFramework_Hardware_Esp32_Bluetooth.cpp
 
-
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHost_mshl.cpp
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHost.cpp
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHostConfiguration_mshl.cpp
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHostConfiguration.cpp
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_GattCharacteristicAttribute_mshl.cpp
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_GattCharacteristicAttribute.cpp
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_GattService_mshl.cpp
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_GattService.cpp
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_GattServiceAttribute_mshl.cpp
-    nanoFramework_Hardware_Esp32_Bluetooth_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_GattServiceAttribute.cpp
-
+    nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHost.cpp
 )
 
 foreach(SRC_FILE ${nanoFramework.Hardware.Esp32.Bluetooth_SRCS})

@@ -84,6 +84,7 @@ macro(ParseNativeAssemblies)
     if(API_Hardware.Esp32)
         ##### API name here (doted name)
         PerformSettingsForApiEntry("nanoFramework.Hardware.Esp32")
+        PerformSettingsForApiEntry("nanoFramework.Hardware.Esp32.Bluetooth")
     endif()
 
     # Hardware.Stm32
