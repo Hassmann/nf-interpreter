@@ -249,6 +249,11 @@
           "type": "BOOL"
         },
         {
+          "name": "API_Hardware.Esp32.Bluetooth",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
           "name": "NF_FEATURE_USE_SPIFFS",
           "value": "False",
           "type": "BOOL"
@@ -505,6 +510,11 @@
         },
         {
           "name": "API_Hardware.Esp32",
+          "value": "OFF",
+          "type": "BOOL"
+        },
+        {
+          "name": "API_Hardware.Esp32.Bluetooth",
           "value": "OFF",
           "type": "BOOL"
         },
