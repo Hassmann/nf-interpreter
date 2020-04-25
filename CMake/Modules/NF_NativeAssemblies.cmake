@@ -31,6 +31,7 @@ option(API_Windows.Storage                      "option for Windows.Storage")
 
 # Esp32 only
 option(API_Hardware.Esp32                       "option for Hardware.Esp32")
+option(API_Hardware.Esp32.Bluetooth             "option for Hardware.Esp32.Bluetooth")
 
 
 # Stm32 only
@@ -84,6 +85,11 @@ macro(ParseNativeAssemblies)
     if(API_Hardware.Esp32)
         ##### API name here (doted name)
         PerformSettingsForApiEntry("nanoFramework.Hardware.Esp32")
+    endif()
+
+    # Hardware.Esp32.Bluetooth
+    if(API_Hardware.Esp32.Bluetooth)
+        ##### API name here (doted name)
         PerformSettingsForApiEntry("nanoFramework.Hardware.Esp32.Bluetooth")
     endif()
 

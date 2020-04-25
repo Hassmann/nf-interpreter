@@ -212,6 +212,10 @@
           "value": "OFF"
         },
         {
+          "name": "API_Hardware.Esp32.Bluetooth",
+          "value": "OFF"
+        },
+        {
           "name": "API_Hardware.Stm32",
           "value": "ON"
         }
@@ -449,6 +453,10 @@
         },
         {
           "name": "API_Hardware.Esp32:BOOL", //OFF-default-ON-to-add-this-API
+          "value": "ON"
+        },
+        {
+          "name": "API_Hardware.Esp32.Bluetooth:BOOL", //OFF-default-ON-to-add-this-API
           "value": "ON"
         },
         {
