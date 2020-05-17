@@ -3,14 +3,8 @@
 # See LICENSE file in the project root for full license information.
 #
 
-########################################################################################
-# make sure that a valid path is set bellow                                            #
-# this is an Interop module so this file should be placed in the CMakes module folder  #
-# usually CMake\Modules                                                                #
-########################################################################################
-
 # native code directory
-set(BASE_PATH_FOR_THIS_MODULE "${BASE_PATH_FOR_CLASS_LIBRARIES_MODULES}/nanoFramework.Hardware.Esp32.Bluetooth")
+set(BASE_PATH_FOR_THIS_MODULE ${BASE_PATH_FOR_CLASS_LIBRARIES_MODULES}/nanoFramework.Hardware.Esp32.Bluetooth)
 
 
 # set include directories
@@ -19,14 +13,30 @@ list(APPEND nanoFramework.Hardware.Esp32.Bluetooth_INCLUDE_DIRS ${PROJECT_SOURCE
 list(APPEND nanoFramework.Hardware.Esp32.Bluetooth_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/src/HAL/Include)
 list(APPEND nanoFramework.Hardware.Esp32.Bluetooth_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/src/PAL/Include)
 list(APPEND nanoFramework.Hardware.Esp32.Bluetooth_INCLUDE_DIRS ${BASE_PATH_FOR_THIS_MODULE})
-
+list(APPEND nanoFramework.Hardware.Esp32.Bluetooth_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/src/nanoFramework.Hardware.Esp32.Bluetooth)
 
 # source files
 set(nanoFramework.Hardware.Esp32.Bluetooth_SRCS
 
-    nanoFramework_Hardware_Esp32_Bluetooth.cpp
+    nf_hardware_esp32_bt.cpp
 
-    nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHost.cpp
+
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothEvent.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothEventProcessor.cpp
+    nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHost.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHost__<>c__DisplayClass13_0.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHostConfiguration.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_Advertisement.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_Advertisement__DataFragment.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_GattCharacteristic.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_GattID.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_GattService.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_TextCharacteristic.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_Gatt_TimeCharacteristic.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_OS.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_OS__GattEntry.cpp
+    # nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_OS__Size.cpp
+
 )
 
 foreach(SRC_FILE ${nanoFramework.Hardware.Esp32.Bluetooth_SRCS})
