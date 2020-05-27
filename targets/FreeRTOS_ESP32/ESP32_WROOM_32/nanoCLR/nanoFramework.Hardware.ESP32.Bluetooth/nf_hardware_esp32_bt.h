@@ -17,6 +17,15 @@
 #include <nanoCLR_Runtime.h>
 #include <corlib_native.h>
 
+#include <Esp32_os.h>
+
+#include "esp_bt.h"
+
+// #include "esp_gap_ble_api.h"
+// #include "esp_gatts_api.h"
+// #include "esp_bt_main.h"
+// #include "esp_gatt_common_api.h"
+
 
 struct Library_nf_hardware_esp32_bt_nanoFramework_Hardware_Esp32_Bluetooth_BluetoothHost
 {
